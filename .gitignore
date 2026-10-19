@@ -1,0 +1,3 @@
+# Local values live outside the repo (see local.example.zsh); never commit a filled-in copy.
+local.zsh
+*.local.zsh
