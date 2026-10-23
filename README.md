@@ -5,7 +5,7 @@ Shell functions I keep out of my zshrc, one file per topic.
 | File | What |
 |---|---|
 | `bump.zsh` | `bump`, `bump-candidate`, `bump-release`, `bump-minor`, `bump-major`: edit the version in `pyproject.toml` |
-| `launch.zsh` | `launch <mode>`: commit and push, bump, commit and push, tag, push tags. `launchf` picks the mode with fzf |
+| `launch.zsh` | `launch <mode> [message]`: bump the version, one commit "`<message>; <version>`", tag, one atomic push. `launchf` picks the mode with fzf |
 | `clone.zsh` | `clone <github-url\|org/repo>`: clone into `~/github/<owner>/<repo>` and cd there, via the `github-<owner>` ssh host when `~/.ssh/config` has one |
 | `oc.zsh` | `oclogin <cluster>`: `oc login --web` to a cluster from `OC_CLUSTERS`. `ocl` picks the cluster with fzf. `proj [project]`: switch oc project, with tab-completion |
 | `kube.zsh` | `kex <pod>`: bash into a pod. `zex <pod> [path]`: zsh into a pod |
@@ -38,15 +38,27 @@ Needs git and ruff. `launchf` also needs fzf. Works on macOS and Linux.
 ## launch
 
 ```
-launch            print the modes
-launch patch      2.0.136   -> 2.0.137
-launch candidate  2.1.0     -> 2.1.0rc1,  2.1.0rc1 -> 2.1.0rc2
-launch release    2.1.0rc3  -> 2.1.0     (strip rc suffix)
-launch minor      2.0.136   -> 2.1.0
-launch major      2.0.136   -> 3.0.0
-launchf           pick a mode with fzf
+launch                      print the full usage
+launch patch [message]      2.0.136   -> 2.0.137
+launch candidate [message]  2.1.0     -> 2.1.0rc1,  2.1.0rc1 -> 2.1.0rc2
+launch release [message]    2.1.0rc3  -> 2.1.0     (strip rc suffix)
+launch minor [message]      2.0.136   -> 2.1.0
+launch major [message]      2.0.136   -> 3.0.0
+launchf [message]           pick a mode with fzf
 ```
 
-Every run commits as "gall" and pushes before and after the bump, then tags
-the new version and pushes the tag. An unknown mode stops before anything is
-pushed.
+In order: `ruff format .`, list pending work (untracked files too) and ask
+"What changed:" if no message was given, bump the version, make one commit
+named `<message>; <new version>` (just `<new version>` on a clean tree), tag
+it, and push branch and tag in one atomic `git push`. On a clean tree
+`launch patch` works as is; nothing has to be edited first.
+
+```
+launch patch "SourceSftp: fetch over SFTP"   -> commit "SourceSftp: fetch over SFTP; 3.1.5", tag 3.1.5
+launch patch                                 -> commit "3.1.5", tag 3.1.5
+```
+
+Nothing is committed or pushed when the mode is unknown, there is no
+`pyproject.toml`, the version is a candidate but the mode is not `candidate`
+or `release`, `candidate` is run on a version that is already tagged (the rc
+would sort below it), `ruff format` fails, or the new tag already exists.
