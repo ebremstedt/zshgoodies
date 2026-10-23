@@ -40,7 +40,8 @@ Needs git and ruff. `launchf` also needs fzf. Works on macOS and Linux.
 ```
 launch                      print the full usage
 launch patch [message]      2.0.136   -> 2.0.137
-launch candidate [message]  2.1.0     -> 2.1.0rc1,  2.1.0rc1 -> 2.1.0rc2
+launch candidate [message]  2.0.136   -> 2.0.137rc1 (2.0.136 is tagged),  2.1.0rc1 -> 2.1.0rc2
+                            2.1.0     -> 2.1.0rc1   (set by hand, not tagged yet)
 launch release [message]    2.1.0rc3  -> 2.1.0     (strip rc suffix)
 launch minor [message]      2.0.136   -> 2.1.0
 launch major [message]      2.0.136   -> 3.0.0
@@ -58,7 +59,11 @@ launch patch "SourceSftp: fetch over SFTP"   -> commit "SourceSftp: fetch over S
 launch patch                                 -> commit "3.1.5", tag 3.1.5
 ```
 
+`candidate` on a version that is already tagged makes a candidate for the next
+patch, so 3.1.4 gives 3.1.5rc1. For a minor or major candidate, set the version
+by hand first: with `version = "3.2.0"` untagged, `launch candidate` gives
+3.2.0rc1, and `launch release` later gives 3.2.0.
+
 Nothing is committed or pushed when the mode is unknown, there is no
 `pyproject.toml`, the version is a candidate but the mode is not `candidate`
-or `release`, `candidate` is run on a version that is already tagged (the rc
-would sort below it), `ruff format` fails, or the new tag already exists.
+or `release`, `ruff format` fails, or the new tag already exists.

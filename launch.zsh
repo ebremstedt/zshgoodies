@@ -7,7 +7,7 @@
 _launch_modes() {
   cat <<'EOF'
 patch      2.0.136   -> 2.0.137
-candidate  2.1.0     -> 2.1.0rc1,  2.1.0rc1 -> 2.1.0rc2
+candidate  2.0.136   -> 2.0.137rc1 (2.0.136 is tagged),  2.1.0 -> 2.1.0rc1 (hand-edited, not tagged),  2.1.0rc1 -> 2.1.0rc2
 release    2.1.0rc3  -> 2.1.0  (strip rc suffix)
 minor      2.0.136   -> 2.1.0
 major      2.0.136   -> 3.0.0
@@ -36,11 +36,12 @@ examples:
   launch patch "SourceSftp: fetch over SFTP"   commit "SourceSftp: fetch over SFTP; 3.1.5", tag 3.1.5
   launch patch                                 clean tree: commit "3.1.5", tag 3.1.5
   launch minor "bulk fetch"                    commit "bulk fetch; 3.2.0", tag 3.2.0
+  launch candidate "try sftp"                  3.1.4 is tagged: commit "try sftp; 3.1.5rc1", tag 3.1.5rc1
+                                               for 3.2.0rc1 set version = "3.2.0" by hand first
 
 stops before anything is committed or pushed when:
   the mode is unknown, there is no pyproject.toml, the version is a candidate but the
-  mode is not candidate/release, candidate is run on an already released version,
-  ruff format fails, or the new tag already exists.
+  mode is not candidate/release, ruff format fails, or the new tag already exists.
 EOF
 }
 _launch_version() { grep -m1 '^version = ' pyproject.toml | awk -F'"' '{print $2}'; }
@@ -63,9 +64,6 @@ launch() {
   if [[ "$old" == *rc* && "$mode" != (candidate|release) ]]; then
     echo "launch: $old is a candidate; use candidate or release"; return 1
   fi
-  if [[ "$mode" == candidate && "$old" != *rc* ]] && git rev-parse -q --verify "refs/tags/$old" >/dev/null; then
-    echo "launch: $old is already released; ${old}rc1 would sort below it"; return 1
-  fi
 
   ruff format . && echo "✓ Ran ruff format" || return 1
 
@@ -78,6 +76,10 @@ launch() {
     fi
   fi
 
+  # candidate on a version that is already out: a candidate for the next patch, 3.1.4 -> 3.1.5rc1
+  if [[ "$mode" == candidate && "$old" != *rc* ]] && git rev-parse -q --verify "refs/tags/$old" >/dev/null; then
+    bump || return 1
+  fi
   "$cmd" || return 1
   new="$(_launch_version)"
   if [[ -z "$new" || "$new" == "$old" ]]; then
